@@ -117,7 +117,7 @@ async def get_ai_response(question: str, user_context: str = "") -> str:
             - If unsure, acknowledge limitations and suggest consulting scholars
             - Be respectful of different schools of thought
             - Focus on practical, beneficial guidance"""
-        ).with_model("openai", "gpt-oss-120b:free")
+        ).with_model("openai", "gpt-4o")
         
         user_message = UserMessage(text=question)
         response = await chat.send_message(user_message)
