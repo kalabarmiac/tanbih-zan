@@ -10,7 +10,7 @@ from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone
 import httpx
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -101,30 +101,10 @@ def parse_from_mongo(item):
                     pass
     return item
 
-# Initialize LLM Chat
+
+# Stub for AI response since emergentintegrations is unavailable
 async def get_ai_response(question: str, user_context: str = "") -> str:
-    try:
-        chat = LlmChat(
-            api_key=os.environ.get('EMERGENT_LLM_KEY'),
-            session_id=f"islamic_assistant_{uuid.uuid4()}",
-            system_message=f"""You are an Islamic AI assistant with deep knowledge of Quran, Hadith, and Islamic jurisprudence. 
-            Provide authentic, scholarly answers based on Quran and Sunnah. Always cite your sources when possible.
-            User context: {user_context}
-            
-            Guidelines:
-            - Answer in a compassionate, knowledgeable manner
-            - Cite Quran verses and Hadith references when relevant
-            - If unsure, acknowledge limitations and suggest consulting scholars
-            - Be respectful of different schools of thought
-            - Focus on practical, beneficial guidance"""
-        ).with_model("openai", "gpt-4o")
-        
-        user_message = UserMessage(text=question)
-        response = await chat.send_message(user_message)
-        return response
-    except Exception as e:
-        logging.error(f"AI Assistant error: {str(e)}")
-        return "I apologize, but I'm currently unable to process your question. Please try again later or consult with a local Islamic scholar."
+    return "AI assistant functionality is currently unavailable. Please consult a local Islamic scholar."
 
 # Routes
 @api_router.get("/")
