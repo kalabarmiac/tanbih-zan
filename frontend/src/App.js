@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Calendar, Clock, Book, MessageCircle, User, Menu, X, Mosque, BookOpen, Heart, BarChart3, CheckCircle, Plus, Settings } from 'lucide-react';
+import { Calendar, Clock, Book, MessageCircle, User, Menu, X, Church, BookOpen, Heart, BarChart3, CheckCircle, Plus, Settings } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
 import { Input } from './components/ui/input';
