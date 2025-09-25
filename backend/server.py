@@ -169,19 +169,24 @@ async def update_user(user_id: str, user_data: UserCreate):
 async def get_prayer_times(city: str, country: str, date: Optional[str] = None):
     """Get prayer times for specified location"""
     try:
+        # Use the timingsByCity endpoint for city-based requests
         url = f"https://api.aladhan.com/v1/timingsByCity"
         params = {
             "city": city,
             "country": country,
-            "method": 2  # Islamic Society of North America method
+            "method": 2,  # Islamic Society of North America method
+            "school": 0   # Shafi school
         }
         if date:
             params["date"] = date
             
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(follow_redirects=True) as client:
             response = await client.get(url, params=params)
             response.raise_for_status()
             data = response.json()
+            
+            if data.get("code") != 200:
+                raise HTTPException(status_code=500, detail="Prayer times API error")
             
             timings = data["data"]["timings"]
             prayer_times = PrayerTimes(
