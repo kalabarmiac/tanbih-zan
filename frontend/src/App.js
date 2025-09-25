@@ -216,7 +216,7 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="flex items-center justify-center space-x-3 mb-4">
-              <Mosque className="w-8 h-8 text-emerald-400" />
+              <Church className="w-8 h-8 text-emerald-400" />
               <span className="text-2xl font-bold">Tanbih</span>
             </div>
             <p className="text-gray-400">
