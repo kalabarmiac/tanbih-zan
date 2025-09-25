@@ -541,7 +541,7 @@ const Dashboard = () => {
       `}>
         <div className="p-6">
           <div className="flex items-center space-x-3 mb-8">
-            <Mosque className="w-8 h-8 text-emerald-600" />
+            <Church className="w-8 h-8 text-emerald-600" />
             <span className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
               Tanbih
             </span>
