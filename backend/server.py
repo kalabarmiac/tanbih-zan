@@ -8,7 +8,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import httpx
 
 
@@ -102,9 +102,59 @@ def parse_from_mongo(item):
     return item
 
 
-# Stub for AI response since emergentintegrations is unavailable
+# Real AI response function using OpenRouter
 async def get_ai_response(question: str, user_context: str = "") -> str:
-    return "AI assistant functionality is currently unavailable. Please consult a local Islamic scholar."
+    """Get AI response from OpenRouter API"""
+    api_key = os.environ.get("OPENROUTER_API_KEY")
+    if not api_key:
+        logging.error("OPENROUTER_API_KEY not found in environment variables.")
+        return "AI assistant is not configured. Please contact support."
+
+    system_prompt = (
+        "You are Tanbih, a compassionate and knowledgeable Islamic AI assistant. "
+        "Your purpose is to provide guidance based on authentic Islamic sources like the Quran and Sunnah. "
+        "Always be respectful, empathetic, and aim to inspire. If you cite sources, mention them clearly. "
+        "Avoid giving personal fatwas or making definitive rulings; instead, explain different scholarly viewpoints if applicable and encourage users to consult local scholars for personal matters. "
+    )
+
+    full_prompt = f"{question}"
+    if user_context:
+        system_prompt += f"Here is some context about the user you are speaking to, use it to tailor your response: {user_context}"
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "openai/gpt-4-turbo",
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": full_prompt}
+                    ]
+                },
+                timeout=30.0
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            if data.get("choices") and len(data["choices"]) > 0:
+                answer = data["choices"][0].get("message", {}).get("content")
+                if answer:
+                    return answer.strip()
+
+            logging.error(f"Unexpected API response structure: {data}")
+            return "I received an unexpected response from the AI service. Please try again."
+
+    except httpx.HTTPStatusError as e:
+        logging.error(f"AI API HTTP error: {e.response.status_code} - {e.response.text}")
+        return "I am having trouble connecting to the AI service right now. Please try again later."
+    except Exception as e:
+        logging.error(f"An unexpected error occurred while fetching AI response: {str(e)}")
+        return "An unexpected error occurred. Please try again later."
 
 # Routes
 @api_router.get("/")
@@ -278,34 +328,53 @@ async def get_hadith_from_collection(collection: str, page: int = 1, limit: int 
 
 @api_router.get("/duas")
 async def get_duas():
-    """Get collection of Duas"""
-    duas = [
+    """Get collection of Duas from a centralized source"""
+    # Centralized duas list
+    duas_list = [
         {
-            "id": "1",
-            "title": "Morning Dua",
-            "category": "daily",
-            "arabic": "أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ",
-            "english": "We have reached the morning and at this very time unto Allah belongs all sovereignty.",
-            "transliteration": "Asbahna wa asbahal-mulku lillahi"
+            "id": "1", "title": "Upon Waking Up", "category": "daily",
+            "arabic": "الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا وَإِلَيْهِ النُّشُورُ",
+            "english": "All praise is for Allah who gave us life after having taken it from us and unto Him is the resurrection.",
+            "transliteration": "Alhamdu lillahil-ladhi ahyana ba'da ma amatana wa ilayhin-nushur."
         },
         {
-            "id": "2", 
-            "title": "Evening Dua",
-            "category": "daily",
-            "arabic": "أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ",
-            "english": "We have reached the evening and at this very time unto Allah belongs all sovereignty.",
-            "transliteration": "Amsayna wa amsal-mulku lillahi"
+            "id": "2", "title": "For Knowledge", "category": "worship",
+            "arabic": "اللَّهُمَّ انْفَعْنِي بِمَا عَلَّمْتَنِي، وَعَلِّمْنِي مَا يَنْفَعُنِي، وَزِدْنِي عِلْمًا",
+            "english": "O Allah, benefit me with what You have taught me, teach me what will benefit me, and increase me in knowledge.",
+            "transliteration": "Allahumman-fa'ni bima 'allamtani, wa 'allimni ma yanfa'uni, wa zidni 'ilma."
         },
         {
-            "id": "3",
-            "title": "Dua for Anxiety",
-            "category": "emotional",
-            "arabic": "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ",
-            "english": "O Allah, I seek refuge in You from worry and grief.",
-            "transliteration": "Allahumma inni a'udhu bika minal-hammi wal-hazan"
+            "id": "3", "title": "For Anxiety and Sorrow", "category": "emotional",
+            "arabic": "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ، وَالْعَجْزِ وَالْكَسَلِ، وَالْبُخْلِ وَالْجُبْنِ، وَضَلَعِ الدَّيْنِ وَغَلَبَةِ الرِّجَالِ",
+            "english": "O Allah, I seek refuge in You from anxiety and sorrow, weakness and laziness, miserliness and cowardice, the burden of debts and from being overpowered by men.",
+            "transliteration": "Allahumma inni a'udhu bika minal-hammi wal-hazan, wal-'ajzi wal-kasal, wal-bukhli wal-jubn, wa dala'id-dayni wa ghalabatir-rijal."
+        },
+        {
+            "id": "4", "title": "Before Eating", "category": "daily",
+            "arabic": "بِسْمِ اللَّهِ",
+            "english": "In the name of Allah.",
+            "transliteration": "Bismillah."
+        },
+        {
+            "id": "5", "title": "After Eating", "category": "daily",
+            "arabic": "الْحَمْدُ لِلَّهِ الَّذِي أَطْعَمَنِي هَذَا وَرَزَقَنِيهِ مِنْ غَيْرِ حَوْلٍ مِنِّي وَلَا قُوَّةٍ",
+            "english": "All praise is for Allah who fed me this and provided it for me without any might nor power from myself.",
+            "transliteration": "Alhamdu lillahil-ladhi at'amani hadha wa razaqanihi min ghayri hawlin minni wa la quwwah."
+        },
+        {
+            "id": "6", "title": "When Leaving Home", "category": "daily",
+            "arabic": "بِسْمِ اللَّهِ، تَوَكَّلْتُ عَلَى اللَّهِ، وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ",
+            "english": "In the name of Allah, I have placed my trust in Allah, there is no might and no power except with Allah.",
+            "transliteration": "Bismillahi, tawakkaltu 'alallahi, wa la hawla wa la quwwata illa billah."
+        },
+        {
+            "id": "7", "title": "For Patience", "category": "emotional",
+            "arabic": "رَبَّنَا أَفْرِغْ عَلَيْنَا صَبْرًا وَثَبِّتْ أَقْدَamَنَا وَانْصُرْنَا عَلَى الْقَوْمِ الْكَافِرِينَ",
+            "english": "Our Lord, pour upon us patience and plant firmly our feet and give us victory over the disbelieving people.",
+            "transliteration": "Rabbana afrigh 'alayna sabran wa thabbit aqdaamana wansurna 'alal-qawmil-kafirin."
         }
     ]
-    return {"duas": duas}
+    return {"duas": duas_list}
 
 @api_router.post("/ai-assistant", response_model=AIResponse)
 async def ask_ai_assistant(question_data: AIQuestion):
@@ -354,24 +423,54 @@ async def complete_task(task_completion: TaskComplete):
 
 @api_router.get("/progress/{user_id}")
 async def get_user_progress(user_id: str):
-    """Get user progress statistics"""
+    """Get user progress statistics, including daily streak"""
     tasks = await db.tasks.find({"user_id": user_id}).to_list(1000)
     
     total_tasks = len(tasks)
     completed_tasks = len([task for task in tasks if task.get("completed", False)])
     completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
     
-    # Calculate streaks and other stats
-    daily_tasks = [task for task in tasks if task.get("frequency") == "daily"]
-    weekly_tasks = [task for task in tasks if task.get("frequency") == "weekly"]
+    daily_tasks_total = len([task for task in tasks if task.get("frequency") == "daily"])
+    weekly_tasks_total = len([task for task in tasks if task.get("frequency") == "weekly"])
+
+    # --- Streak Calculation Logic ---
+    streak_days = 0
+    # Filter for completed, daily tasks
+    completed_daily_tasks = [
+        task for task in tasks
+        if task.get("completed") and task.get("frequency") == "daily" and task.get("completed_at")
+    ]
     
+    if completed_daily_tasks:
+        # Get unique completion dates (ignoring time)
+        completion_dates = sorted(
+            list(set(
+                datetime.fromisoformat(task["completed_at"]).date() for task in completed_daily_tasks
+            )),
+            reverse=True
+        )
+
+        today = datetime.now(timezone.utc).date()
+
+        # Check if the most recent completion was today or yesterday
+        if completion_dates[0] == today or completion_dates[0] == today - timedelta(days=1):
+            streak_days = 1
+            # Iterate backwards from the most recent completion date
+            for i in range(len(completion_dates) - 1):
+                # Check if the next date is consecutive
+                if completion_dates[i] - timedelta(days=1) == completion_dates[i+1]:
+                    streak_days += 1
+                else:
+                    # Break the loop if the streak is broken
+                    break
+
     return {
         "total_tasks": total_tasks,
         "completed_tasks": completed_tasks,
         "completion_rate": round(completion_rate, 2),
-        "daily_tasks": len(daily_tasks),
-        "weekly_tasks": len(weekly_tasks),
-        "streak_days": 0  # TODO: Implement streak calculation
+        "daily_tasks": daily_tasks_total,
+        "weekly_tasks": weekly_tasks_total,
+        "streak_days": streak_days
     }
 
 async def generate_initial_tasks(user_id: str, user_data: dict):
