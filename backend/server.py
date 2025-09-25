@@ -279,8 +279,14 @@ async def get_hadith_collections():
 async def get_hadith_from_collection(collection: str, page: int = 1, limit: int = 10):
     """Get Hadith from specific collection"""
     try:
-        url = f"https://hadithapi.com/api/{collection}/hadiths"
-        params = {"apikey": os.environ.get('HADITH_API_KEY'), "page": page, "paginate": limit}
+        # Updated endpoint structure for HadithAPI.com
+        url = f"https://hadithapi.com/api/hadiths"
+        params = {
+            "apiKey": os.environ.get('HADITH_API_KEY'), 
+            "book": collection, 
+            "page": page, 
+            "language": "en"
+        }
         
         async with httpx.AsyncClient() as client:
             response = await client.get(url, params=params)
