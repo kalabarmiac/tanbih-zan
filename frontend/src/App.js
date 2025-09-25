@@ -495,7 +495,7 @@ const Dashboard = () => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50">
         <Card className="w-96">
           <CardContent className="p-8 text-center">
-            <Mosque className="w-16 h-16 text-emerald-600 mx-auto mb-4" />
+            <Church className="w-16 h-16 text-emerald-600 mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-4">Welcome to Tanbih</h2>
             <p className="text-gray-600 mb-6">Please complete onboarding to get started</p>
             <Button 
