@@ -259,7 +259,7 @@ const OnboardingPage = () => {
         <Card className="shadow-2xl border border-emerald-100">
           <CardHeader className="text-center pb-6">
             <div className="flex items-center justify-center space-x-3 mb-4">
-              <Mosque className="w-8 h-8 text-emerald-600" />
+              <Church className="w-8 h-8 text-emerald-600" />
               <CardTitle className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                 Welcome to Tanbih
               </CardTitle>
